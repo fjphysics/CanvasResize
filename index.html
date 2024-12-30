@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas 全屏示例</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+            border: 1px solid #000;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const originalWidth = 800;
+        const originalHeight = 600;
+
+        // 初始化Canvas大小
+        function initCanvas() {
+            updateCanvasSize();
+        }
+
+        // 绘制图形的函数
+        function drawShapes(scale) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 示例图形绘制
+            ctx.fillStyle = 'blue';
+            ctx.fillRect(100 * scale, 100 * scale, 200 * scale, 150 * scale); // 坐标和尺寸使用缩放比例
+
+            ctx.fillStyle = 'red';
+            ctx.beginPath();
+            ctx.arc(400 * scale, 300 * scale, 50 * scale, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = 'black';
+            ctx.font = `${30 * scale}px Arial`;
+            ctx.fillText('Hello, Canvas!', 300 * scale, 500 * scale);
+        }
+
+        // 更新Canvas大小
+        function updateCanvasSize() {
+            const scale = Math.min(window.innerWidth / originalWidth, window.innerHeight / originalHeight);
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            ctx.setTransform(scale, 0, 0, scale, 0, 0); // 进行缩放
+
+            // 重新绘制内容
+            drawShapes(scale);
+        }
+
+        // 窗口大小变化时重新绘制图形
+        window.addEventListener('resize', updateCanvasSize);
+
+        // 初始化Canvas
+        initCanvas();
+    </script>
+</body>
+</html>
