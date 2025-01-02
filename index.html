@@ -1,68 +1,131 @@
 <!DOCTYPE html>
-<html lang="zh-cn">
+<html lang="zh">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Canvas 全屏示例</title>
+    <title>Canvas Scaling with Pixel Density</title>
     <style>
-        body {
+        body, html {
             margin: 0;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #container {
+            width: 80vw; /* 可以根据需要调整 */
+            height: 80vh; /* 可以根据需要调整 */
+            position: relative;
             overflow: hidden;
+            background-color: #f0f0f0; /* 背景色 */
         }
         canvas {
-            display: block;
-            border: 1px solid #000;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 2px solid red; /* 添加红色边框 */
+        }
+        #slider {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            width: 100px;
         }
     </style>
 </head>
 <body>
-    <canvas id="myCanvas"></canvas>
+    <div id="container">
+        <canvas id="myCanvas"></canvas>
+        <input type="range" id="slider" min="1" max="100" value="50">
+    </div>
+
     <script>
         const canvas = document.getElementById('myCanvas');
         const ctx = canvas.getContext('2d');
+        const container = document.getElementById('container');
+        const slider = document.getElementById('slider');
 
-        const originalWidth = 800;
-        const originalHeight = 600;
+        const baseWidth = 800; // 基础分辨率宽度
+        const baseHeight = 600; // 基础分辨率高度
 
-        // 初始化Canvas大小
-        function initCanvas() {
-            updateCanvasSize();
+        let startTime;
+        let startX = 100;
+        const distance = 200;
+        const duration = 1000; // 动画持续时间1秒
+
+        const svgData = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+                <circle cx="50" cy="50" r="50" fill="red" />
+            </svg>
+        `;
+        const img = new Image();
+        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(svgBlob);
+
+        img.onload = function() {
+            URL.revokeObjectURL(url);
+            resizeCanvas();
+        };
+        img.src = url;
+
+        function resizeCanvas() {
+            const containerWidth = container.clientWidth;
+            const containerHeight = container.clientHeight;
+
+            const containerRatio = containerWidth / containerHeight;
+            const baseRatio = baseWidth / baseHeight;
+
+            if (containerRatio > baseRatio) {
+                canvas.width = containerHeight * baseRatio;
+                canvas.height = containerHeight;
+            } else {
+                canvas.width = containerWidth;
+                canvas.height = containerWidth / baseRatio;
+            }
+
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width *= dpr;
+            canvas.height *= dpr;
+            ctx.scale(dpr, dpr);
+
+            drawScaledGraphics(startX);
         }
 
-        // 绘制图形的函数
-        function drawShapes(scale) {
+        function drawScaledGraphics(x) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // 示例图形绘制
             ctx.fillStyle = 'blue';
-            ctx.fillRect(100 * scale, 100 * scale, 200 * scale, 150 * scale); // 坐标和尺寸使用缩放比例
 
-            ctx.fillStyle = 'red';
-            ctx.beginPath();
-            ctx.arc(400 * scale, 300 * scale, 50 * scale, 0, Math.PI * 2);
-            ctx.fill();
+            const scaleX = canvas.width / baseWidth;
+            const scaleY = canvas.height / baseHeight;
 
-            ctx.fillStyle = 'black';
-            ctx.font = `${30 * scale}px Arial`;
-            ctx.fillText('Hello, Canvas!', 300 * scale, 500 * scale);
+            // 绘制缩放后的正方形
+            const squareSize = 50;
+            ctx.fillRect(x * scaleX, 100 * scaleY, squareSize * scaleX, squareSize * scaleY);
+
+            // 绘制SVG红色圆形
+            ctx.drawImage(img, 200 * scaleX, 100 * scaleY, 100 * scaleX, 100 * scaleY);
         }
 
-        // 更新Canvas大小
-        function updateCanvasSize() {
-            const scale = Math.min(window.innerWidth / originalWidth, window.innerHeight / originalHeight);
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            ctx.setTransform(scale, 0, 0, scale, 0, 0); // 进行缩放
+        function animateSquare(timestamp) {
+            if (!startTime) startTime = timestamp;
+            const elapsed = timestamp - startTime;
 
-            // 重新绘制内容
-            drawShapes(scale);
+            const progress = Math.min(elapsed / duration, 1);
+            const x = startX + progress * distance;
+
+            drawScaledGraphics(x);
+
+            if (progress < 1) {
+                requestAnimationFrame(animateSquare);
+            }
         }
 
-        // 窗口大小变化时重新绘制图形
-        window.addEventListener('resize', updateCanvasSize);
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
 
-        // 初始化Canvas
-        initCanvas();
+        // 开始动画
+        requestAnimationFrame(animateSquare);
     </script>
 </body>
 </html>
